@@ -88,17 +88,17 @@ func NewConfig() (*Config, error) {
 }
 
 func loadDefaultConfigParameters() {
-	viper.BindEnv("viti_agent_develop", Develop)
+	_ = viper.BindEnv("viti_agent_develop", Develop)
 
-	viper.BindEnv("viti_host", VitiHost)
-	viper.BindEnv("viti_port", VitiPort)
-	viper.BindEnv("viti_token", VitiToken)
+	_ = viper.BindEnv("viti_host", VitiHost)
+	_ = viper.BindEnv("viti_port", VitiPort)
+	_ = viper.BindEnv("viti_token", VitiToken)
 
-	viper.BindEnv("ror_url", RorUrl)
-	viper.BindEnv("ror_role", RorRole)
-	viper.BindEnv("ror_commit", RorCommit)
-	viper.BindEnv("ror_version", RorVersion)
-	viper.BindEnv("ror_apikey", RorApikey)
+	_ = viper.BindEnv("ror_url", RorUrl)
+	_ = viper.BindEnv("ror_role", RorRole)
+	_ = viper.BindEnv("ror_commit", RorCommit)
+	_ = viper.BindEnv("ror_version", RorVersion)
+	_ = viper.BindEnv("ror_apikey", RorApikey)
 }
 
 func setConfigSources() {
