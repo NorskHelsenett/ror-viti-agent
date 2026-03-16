@@ -9,7 +9,10 @@ import (
 func MarshalMachineObjects(unstructured []unstructured.Unstructured) ([]*v1alpha1.Machine, error) {
 	output := make([]*v1alpha1.Machine, len(unstructured))
 	for index, resource := range unstructured {
-		err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, output[index])
+		if resource.GroupVersionKind() != NewGVRV1Alpha1Machine().GroupVersion().WithKind("Machine") {
+			continue
+		}
+		err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, &output[index])
 		if err != nil {
 			return nil, err
 		}
