@@ -27,7 +27,8 @@ func GetNamespaceId() uuid.UUID {
 }
 
 type Config struct {
-	develop bool `mapstructure:"viti_agent_develop"`
+	Develop  bool `mapstructure:"viti_agent_develop"`
+	LogLevel int  `mapstructure:"viti_agent_log_level"`
 
 	VitiHost  string `mapstructure:"viti_host"`
 	VitiPort  string `mapstructure:"viti_port"`
@@ -48,7 +49,9 @@ type Config struct {
 }
 
 const (
-	Develop   = "VITI_AGENT_DEVELOP"
+	Develop  = "VITI_AGENT_DEVELOP"
+	LogLevel = "VITI_AGENT_LOG_LEVEL"
+
 	VitiHost  = "VITI_HOST"
 	VitiPort  = "VITI_PORT"
 	VitiToken = "VITI_TOKEN"
@@ -70,6 +73,9 @@ const (
 func NewConfig() (*Config, error) {
 	viper.AutomaticEnv()
 
+	viper.SetDefault("viti_agent_log_level", 0)
+	viper.SetDefault("viti_agent_develop", false)
+
 	loadDefaultConfigParameters()
 	setConfigSources()
 
@@ -89,6 +95,7 @@ func NewConfig() (*Config, error) {
 
 func loadDefaultConfigParameters() {
 	_ = viper.BindEnv("viti_agent_develop", Develop)
+	_ = viper.BindEnv("viti_agent_log_level", LogLevel)
 
 	_ = viper.BindEnv("viti_host", VitiHost)
 	_ = viper.BindEnv("viti_port", VitiPort)
