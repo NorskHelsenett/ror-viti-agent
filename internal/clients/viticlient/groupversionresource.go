@@ -4,6 +4,8 @@ import "k8s.io/apimachinery/pkg/runtime/schema"
 
 // NewGVR means NewGroupVersionResource, which is used to filter resources using
 // the dynamic client.
+//
+// The core kubernetes resources have an empty group.
 func NewGVR(group, version, resource string) *schema.GroupVersionResource {
 	return &schema.GroupVersionResource{
 		Group:    group,
