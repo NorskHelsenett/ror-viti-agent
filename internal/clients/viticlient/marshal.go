@@ -6,6 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+// MarshalMachineObjects takes a slice of unstructured.Unstructured and converts it to v1alpha1.Machine.
+// It checks each resource if it matches the expected GroupVersionKind with the Machine definition,
+// and converts any matches to the output.
 func MarshalMachineObjects(unstructured []unstructured.Unstructured) ([]*v1alpha1.Machine, error) {
 	output := make([]*v1alpha1.Machine, len(unstructured))
 	for index, resource := range unstructured {
