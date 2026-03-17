@@ -7,6 +7,7 @@ import (
 
 	"github.com/NorskHelsenett/ror-viti-agent/internal/clients/viticlient"
 	"github.com/NorskHelsenett/ror-viti-agent/internal/config"
+	"github.com/NorskHelsenett/ror-viti-agent/internal/converter"
 	"github.com/goforj/godump"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -43,7 +44,13 @@ func main() {
 			time.Sleep(time.Second * time.Duration(conf.PollInterval))
 			continue
 		}
-		godump.DumpJSON(machines)
+		rormachines, err := converter.ConvertToRorMachines(machines)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to convert to ror resources", "error", err)
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		godump.DumpJSON(rormachines)
 
 		time.Sleep(time.Second * time.Duration(conf.PollInterval))
 	}
