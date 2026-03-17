@@ -19,7 +19,7 @@ func TestConvertToVitiMachine(t *testing.T) {
 	gofakeit.Struct(&machine)
 	rorresource.SetMachine(machine)
 
-	vitiresource, err := converter.ConvertToVitiMachine(*rorresource)
+	vitiresource, err := converter.ConvertToVitiMachine(rorresource)
 	if err != nil {
 		t.Error("received unexpected error. %w", err)
 	}
