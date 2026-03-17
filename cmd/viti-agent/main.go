@@ -32,7 +32,7 @@ func main() {
 		resources, err := dynamic.Resource(*viticlient.NewGVRV1Alpha1Machine()).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to gather resource(s)", "error", err)
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * time.Duration(conf.PollInterval))
 			continue
 		}
 
@@ -40,12 +40,12 @@ func main() {
 		machines, err := viticlient.MarshalMachineObjects(resources.Items)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to convert from unstructured", "error", err)
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * time.Duration(conf.PollInterval))
 			continue
 		}
 		godump.DumpJSON(machines)
 
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * time.Duration(conf.PollInterval))
 	}
 
 }
