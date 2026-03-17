@@ -62,7 +62,7 @@ func ConvertToRorMachine(vitimachine *v1alpha1.Machine) (*rorresources.Resource,
 }
 
 func ConvertToRorMachines(vitimachines []*v1alpha1.Machine) ([]*rorresources.Resource, error) {
-	output := make([]*rorresources.Resource, len(vitimachines))
+	output := make([]*rorresources.Resource, 0, len(vitimachines))
 
 	for _, vitimachine := range vitimachines {
 		res, err := ConvertToRorMachine(vitimachine)
