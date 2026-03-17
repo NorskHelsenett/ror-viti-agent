@@ -50,7 +50,7 @@ func ConvertToRorMachine(vitimachine *v1alpha1.Machine) (*rorresources.Resource,
 	}
 	rorresource := rorresources.NewRorResource("machine", "machine.ror.internal/v1alpha1")
 	rorresource.RorMeta.Ownerref = rorresourceowner.RorResourceOwnerReference{
-		Scope:   aclmodels.Acl2ScopeUnknown,
+		Scope:   aclmodels.Acl2ScopeMachine,
 		Subject: aclmodels.Acl2Subject(machine.Status.ProviderStatus.ProviderID),
 	}
 
