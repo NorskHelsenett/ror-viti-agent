@@ -12,6 +12,9 @@ var (
 	ErrUnexpectedGroupVersionKind = errors.New("unexpected group version kind")
 )
 
+// MarshalMachineObject converts unstructured.unstructured and converts it to a v1alpha1.Machine.
+// It checks the input if it matches the expected GroupVersionKind with the Machine definition,
+// and converts any matches to the output.
 func MarshalMachineObject(unstructured *unstructured.Unstructured, machine *v1alpha1.Machine) error {
 	if unstructured.GroupVersionKind() != NewGVRV1Alpha1Machine().GroupVersion().WithKind("Machine") {
 		return ErrUnexpectedGroupVersionKind
