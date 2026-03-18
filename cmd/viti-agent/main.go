@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/NorskHelsenett/ror-viti-agent/internal/clients/rorclient"
 	"github.com/NorskHelsenett/ror-viti-agent/internal/clients/viticlient"
 	"github.com/NorskHelsenett/ror-viti-agent/internal/config"
-	"github.com/NorskHelsenett/ror-viti-agent/internal/rorclient"
 	"github.com/vitistack/common/pkg/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
