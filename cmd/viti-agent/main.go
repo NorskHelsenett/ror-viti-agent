@@ -52,7 +52,6 @@ func main() {
 		UpdateFunc: viticlient.UpdateFunc,
 		DeleteFunc: viticlient.DeleteFunc,
 	}
-	// For ctx stuff, starts and stops with the informer
 
 	slog.InfoContext(ctx, "Registering handlers")
 	informer.AddEventHandler(handlerfuncs)
