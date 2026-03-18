@@ -3,7 +3,6 @@ package rorclient
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/NorskHelsenett/ror/pkg/clients/rorclient"
@@ -12,6 +11,7 @@ import (
 	"github.com/NorskHelsenett/ror/pkg/clients/rorclient/v2/transports/resttransport/httpclient"
 	"github.com/NorskHelsenett/ror/pkg/config/rorversion"
 	"github.com/NorskHelsenett/ror/pkg/rorresources"
+	"golang.org/x/time/rate"
 )
 
 type RorClient struct {
@@ -149,23 +149,49 @@ func (r *RorClient) updateRorResource(rorSet *rorresources.ResourceSet) (*rorres
 	return response, nil
 }
 
-func chunkResourceToSet(resources []*rorresources.Resource, size int) []*rorresources.ResourceSet {
+// DeleteRorResource deletes a ror resource with matching uuid.
+func (r *RorClient) DeleteRorResource(ctx context.Context, uuid string) error {
 
-	output := make([]*rorresources.ResourceSet, 0)
-	resourcechunks := chunkToMax(resources, size)
-
-	for _, resourcechunk := range resourcechunks {
-		set := rorresources.NewResourceSet()
-		for _, resource := range resourcechunk {
-			set.Add(resource)
-		}
-		output = append(output, set)
+	_, err := r.Client.ResourcesV2().Delete(r.Context, uuid)
+	if err != nil {
+		return fmt.Errorf("failed to delete resource id %v. %w", uuid, err)
 	}
 
-	return output
+	return nil
 }
 
-// ChunkToMax slices an slice of items into chunks of maxSize.
-func chunkToMax(items []*rorresources.Resource, maxSize int) [][]*rorresources.Resource {
-	return slices.Collect(slices.Chunk(items, maxSize))
+// DeleteRorResources delete ror resources with matching UUIDs, implements a ratelimiting to avoid the 50/sec/100/burst rate limitation by the rorclient.
+func (r *RorClient) DeleteRorResources(ctx context.Context, uuids []string) []RorDeleteAction {
+
+	errs := []RorDeleteAction{}
+
+	rateLimit := 49
+	burstRateLimit := 98
+	limiter := rate.NewLimiter(rate.Limit(rateLimit), burstRateLimit)
+	for _, uuid := range uuids {
+
+		errAction := NewRorDeleteAction(uuid)
+
+		err := limiter.Wait(r.Context)
+		if err != nil {
+			errAction.Err = err
+			errAction.Message = fmt.Sprintf("limiter error on id %v.", uuid)
+			errs = append(errs, *errAction)
+			continue
+		}
+		err = r.DeleteRorResource(ctx, uuid)
+		if err != nil {
+			errAction.Err = err
+			errAction.Message = fmt.Sprintf("failed deleting id %v. %v", uuid, err)
+			if strings.Contains(err.Error(), "http error: 404 Not Found from") {
+				errAction.Exists = false
+			} else {
+				errAction.Exists = true
+			}
+			errs = append(errs, *errAction)
+
+		}
+	}
+
+	return errs
 }
