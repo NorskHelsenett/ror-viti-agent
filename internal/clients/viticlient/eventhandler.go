@@ -17,6 +17,7 @@ func AddFunc(obj any) {
 	}
 	slog.Info("added machine", "name", machine.Name)
 }
+
 func UpdateFunc(oldObj, newObj any) {
 	var oldMachine v1alpha1.Machine
 	err := MarshalAnyMachineObject(oldObj, &oldMachine)
@@ -36,6 +37,7 @@ func UpdateFunc(oldObj, newObj any) {
 	slog.Info("updated machine", "old_name", oldMachine.Name, "new_machine", newMachine.Name, "equality", equality)
 
 }
+
 func DeleteFunc(obj any) {
 	var machine v1alpha1.Machine
 	err := MarshalAnyMachineObject(obj, &machine)
