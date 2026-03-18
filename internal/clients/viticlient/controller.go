@@ -25,11 +25,11 @@ type controller struct {
 	queue     workqueue.RateLimitingInterface
 	client    dynamic.Interface
 	gvr       schema.GroupVersionResource
-	rorclient rorclient.RorClient
+	rorclient *rorclient.RorClient
 	ctx       context.Context
 }
 
-func NewController(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersionResource, rorclient rorclient.RorClient) *controller {
+func NewController(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersionResource, rorclient *rorclient.RorClient) *controller {
 	factory := dynamicinformer.NewDynamicSharedInformerFactory(client, 30*time.Second)
 	informer := factory.ForResource(gvr)
 
