@@ -19,9 +19,9 @@ type ClientWatcher struct {
 	gvr           schema.GroupVersionResource
 }
 
-//func newWatcher(client *dynamic.DynamicClient, gvr schema.GroupVersionResource) Watcher {
-//	return &clientWatcher{dynamicClient: client, gvr: gvr}
-//}
+// func newWatcher(client *dynamic.DynamicClient, gvr schema.GroupVersionResource) *ClientWatcher {
+// 	return &ClientWatcher{dynamicClient: client, gvr: gvr}
+// }
 
 // CreateK8sDynamicClient will create a dynamic.DynamicClient using the current context.
 //
@@ -60,12 +60,12 @@ func CreateK8sStaticClient(inCluster bool) (*kubernetes.Clientset, error) {
 	var err error
 	slog.Debug("gathering cluster config", "inCluster", inCluster)
 	if inCluster {
-		clientset, err = getOutClusterClientSet()
+		clientset, err = getInClusterClientSet()
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		clientset, err = getInClusterClientSet()
+		clientset, err = getOutClusterClientSet()
 		if err != nil {
 			return nil, err
 		}
