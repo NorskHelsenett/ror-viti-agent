@@ -5,7 +5,6 @@ go 1.26.1
 require (
 	github.com/NorskHelsenett/ror v1.17.2
 	github.com/brianvoe/gofakeit/v7 v7.14.1
-	github.com/goforj/godump v1.9.1
 	github.com/google/uuid v1.6.0
 	github.com/spf13/viper v1.21.0
 	github.com/vitistack/common v0.8.48
@@ -45,6 +44,7 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.25.5 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -54,6 +54,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
