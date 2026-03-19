@@ -3,14 +3,10 @@ package main
 import (
 	"context"
 	"log/slog"
-	"sync"
-	"time"
 
 	"github.com/NorskHelsenett/ror-viti-agent/internal/clients/rorclient"
 	"github.com/NorskHelsenett/ror-viti-agent/internal/clients/viticlient"
 	"github.com/NorskHelsenett/ror-viti-agent/internal/config"
-	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/tools/cache"
 )
 
 func main() {
@@ -26,7 +22,7 @@ func main() {
 	defer cancel()
 
 	slog.InfoContext(ctx, "Creating rorclient")
-	_, err = rorclient.NewRorClient(
+	rclient, err := rorclient.NewRorClient(
 		ctx,
 		conf.RorApikey,
 		conf.RorUrl,
@@ -41,31 +37,11 @@ func main() {
 		panic(err)
 	}
 
-	slog.InfoContext(ctx, "Creating factory")
-	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamic, time.Second*5, "", nil)
-	slog.InfoContext(ctx, "Creating kubernetes informer")
-	informer := factory.ForResource(*viticlient.NewGVRV1Alpha1Machine()).Informer()
+	controller := viticlient.NewController(ctx, dynamic, *viticlient.NewGVRV1Alpha1Machine(), rclient)
 
-	slog.InfoContext(ctx, "Creating handlers")
-	handlerfuncs := cache.ResourceEventHandlerFuncs{
-		AddFunc:    viticlient.AddFunc,
-		UpdateFunc: viticlient.UpdateFunc,
-		DeleteFunc: viticlient.DeleteFunc,
+	err = controller.Run(ctx)
+	if err != nil {
+		panic(err)
 	}
-
-	slog.InfoContext(ctx, "Registering handlers")
-	informer.AddEventHandler(handlerfuncs)
-
-	wg := sync.WaitGroup{}
-	wg.Go(func() { informer.RunWithContext(ctx) })
-
-	slog.InfoContext(ctx, "starting cache...")
-	if !cache.WaitForNamedCacheSyncWithContext(ctx, informer.HasSynced) {
-		panic("failed to sync cache")
-	}
-
-	slog.InfoContext(ctx, "cache synced, watching changes")
-
-	wg.Wait()
 
 }
