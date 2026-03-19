@@ -45,7 +45,7 @@ func ConvertToVitiMachines(rormachines []*rorresources.Resource) ([]*v1alpha1.Ma
 func ConvertToRorMachine(vitimachine *v1alpha1.Machine) (*rorresources.Resource, error) {
 
 	machine := rortypes.ResourceMachine{
-		Spec:   *convertRorMachineSpec(vitimachine),
+		Spec:   rortypes.ResourceMachineSpec{},
 		Status: *convertRorMachineStatus(vitimachine),
 	}
 	rorresource := rorresources.NewRorResource("machine", "machine.ror.internal/v1alpha1")
@@ -73,14 +73,6 @@ func ConvertToRorMachines(vitimachines []*v1alpha1.Machine) ([]*rorresources.Res
 	}
 
 	return output, nil
-}
-
-func convertRorMachineSpec(vitimachine *v1alpha1.Machine) *rortypes.ResourceMachineSpec {
-	spec := rortypes.ResourceMachineSpec{
-		ProviderSpec: &vitimachine.Spec,
-	}
-
-	return &spec
 }
 
 func convertRorMachineStatus(vitimachine *v1alpha1.Machine) *rortypes.ResourceMachineStatus {
