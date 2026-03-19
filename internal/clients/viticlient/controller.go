@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/NorskHelsenett/ror-viti-agent/internal/clients/rorclient"
 	"github.com/NorskHelsenett/ror-viti-agent/internal/converter"
-	"github.com/NorskHelsenett/ror/pkg/rorresources"
 	"github.com/vitistack/common/pkg/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -87,8 +87,10 @@ func (c *controller) Run(ctx context.Context) error {
 		return errors.New("failed to sync cache")
 	}
 
-	go wait.Until(c.runWorker, time.Second, ctx.Done())
+	wg := sync.WaitGroup{}
+	wg.Go(func() { wait.Until(c.runWorker, time.Second, ctx.Done()) })
 
+	wg.Wait()
 	ctx.Done()
 	return nil
 }
@@ -142,7 +144,8 @@ func (c *controller) reconcile(key string) error {
 		return err
 	}
 
-	err = c.rorclient.UpdateRorResources([]*rorresources.Resource{resource})
+	slog.InfoContext(c.ctx, "adding or updating resource", "name", resource.GetName(), "uid", resource.GetUID())
+	// err = c.rorclient.UpdateRorResources([]*rorresources.Resource{resource})
 	if err != nil {
 		return err
 	}
