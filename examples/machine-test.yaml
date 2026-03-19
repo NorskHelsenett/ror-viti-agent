@@ -1,0 +1,10 @@
+apiVersion: vitistack.io/v1alpha1
+kind: Machine
+metadata:
+  name: test-machine                     
+  namespace: default               
+  labels:
+    cluster.vitistack.io/cluster-name: foo
+    vitistack.io/machine-template: small    
+spec:
+
