@@ -10,6 +10,9 @@ import (
 )
 
 func main() {
+	// TODO: move flag setup here
+	// having flags defined where they are used can quickly lead to duplicate
+	// definitions.
 
 	conf, err := config.NewConfig()
 	if err != nil {
