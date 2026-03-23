@@ -30,6 +30,9 @@ func main() {
 		conf.RorVersion,
 		conf.RorCommit,
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	slog.InfoContext(ctx, "Creating kubernetes client")
 	dynamic, err := viticlient.CreateK8sDynamicClient()
