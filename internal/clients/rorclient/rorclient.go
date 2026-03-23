@@ -86,7 +86,7 @@ func NewRorClient(ctx context.Context, apikey, url, role, version, commit string
 	err = rorClient.Client.CheckConnection()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("connection test to rorclient failed. %w", err)
 	}
 
 	return &rorClient, nil
