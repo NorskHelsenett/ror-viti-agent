@@ -3,44 +3,50 @@ package viticlient
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/NorskHelsenett/ror-viti-agent/internal/clients/rorclient"
-	"github.com/NorskHelsenett/ror-viti-agent/internal/converter"
 	"github.com/vitistack/common/pkg/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const RORFinalizer = "ManagedByRoR"
+
 type controller struct {
-	informer  cache.SharedIndexInformer
-	lister    cache.GenericLister
-	queue     workqueue.TypedRateLimitingInterface[string]
-	client    dynamic.Interface
-	gvr       schema.GroupVersionResource
-	rorclient *rorclient.RorClient
-	ctx       context.Context
+	informer      cache.SharedIndexInformer
+	lister        cache.GenericLister
+	queue         workqueue.TypedRateLimitingInterface[string]
+	client        dynamic.Interface
+	gvr           schema.GroupVersionResource
+	machineClient *rorclient.MachineClient
+	ctx           context.Context
 }
 
-func NewController(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersionResource, rorclient *rorclient.RorClient) *controller {
+func NewController(ctx context.Context, client dynamic.Interface, gvr schema.GroupVersionResource, machineClient *rorclient.MachineClient) *controller {
 	factory := dynamicinformer.NewDynamicSharedInformerFactory(client, 30*time.Second)
 	informer := factory.ForResource(gvr)
 
 	c := &controller{
-		client:    client,
-		informer:  informer.Informer(),
-		lister:    informer.Lister(),
-		queue:     workqueue.NewTypedRateLimitingQueue[string](workqueue.DefaultTypedControllerRateLimiter[string]()),
-		gvr:       gvr,
-		rorclient: rorclient,
-		ctx:       ctx,
+		client:        client,
+		informer:      informer.Informer(),
+		lister:        informer.Lister(),
+		queue:         workqueue.NewTypedRateLimitingQueue[string](workqueue.DefaultTypedControllerRateLimiter[string]()),
+		gvr:           gvr,
+		machineClient: machineClient,
+		ctx:           ctx,
 	}
 
 	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -132,7 +138,6 @@ func (c *controller) reconcile(key string) error {
 
 	cachedObj, err := c.lister.Get(key)
 	if k8serrors.IsNotFound(err) {
-		// c.rorclient.DeleteRorResources(c.ctx)
 		slog.ErrorContext(c.ctx, "did not find key in cache", "key", key, "error", err)
 		return nil
 	}
@@ -147,15 +152,64 @@ func (c *controller) reconcile(key string) error {
 		slog.ErrorContext(c.ctx, "unable to marshal object to machine", "key", key, "error", err)
 		return err
 	}
+	//
+	// if the deletetion time stamp is not set we need to add our finalizer, if
+	// it is set we need to remove the object from ror and remove our finalizer
+	if machine.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(&machine, RORFinalizer) {
+			if ok := controllerutil.AddFinalizer(&machine, RORFinalizer); ok {
+				slog.Debug("added finalizer", "key", key)
+			} else {
+				slog.Debug("could not add finalizer", "key", key)
+			}
 
-	resource, err := converter.ConvertToRorMachine(&machine)
+			err := c.UpdateUnstructured(context.TODO(), &machine)
+			if err != nil {
+				err := fmt.Errorf("could not update resource with key: %s: %w", key, err)
+				return err
+			}
+		}
+	} else {
+		//delete from ROR
+		c.machineClient.Delete(context.TODO(), machine)
+
+		if controllerutil.ContainsFinalizer(&machine, RORFinalizer) {
+			if ok := controllerutil.RemoveFinalizer(&machine, RORFinalizer); ok {
+				slog.Debug("removed finalizer", "key", key)
+			} else {
+				slog.Debug("could not remove finalizer", "key", key)
+			}
+
+			err := c.UpdateUnstructured(context.TODO(), &machine)
+			if err != nil {
+				err := fmt.Errorf("could not update resource with key: %s: %w", key, err)
+				return err
+			}
+		} else {
+			warn := fmt.Sprintf("resource with delete timestamp did not have the %s finalizer", RORFinalizer)
+			slog.Warn(warn, "key", key)
+		}
+
+		return nil
+	}
+
+	err = c.machineClient.UpdateProviderStatus(context.TODO(), machine)
 	if err != nil {
-		slog.ErrorContext(c.ctx, "unable to convert object to ror resource", "key", key, "error", err)
 		return err
 	}
 
-	slog.InfoContext(c.ctx, "adding or updating resource", "name", resource.GetName(), "uid", resource.GetUID())
-	// err = c.rorclient.UpdateRorResources([]*rorresources.Resource{resource})
+	return nil
+}
+
+func (c controller) UpdateUnstructured(ctx context.Context, machine *v1alpha1.Machine) error {
+	// TODO: we should generate a client for the Machine CRD so we don't
+	// have to use the dynamic client
+	obj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&machine)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.client.Resource(c.gvr).Update(context.TODO(), &unstructured.Unstructured{Object: obj}, v1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
