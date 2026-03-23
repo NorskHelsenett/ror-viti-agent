@@ -19,24 +19,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-type EventType string
-
-const (
-	EVENTADD    EventType = "Add"
-	EVENTUPDATE EventType = "Update"
-	EVENTDELETE EventType = "Delete"
-)
-
-type QueueItem struct {
-	Key       string
-	Id        string
-	EventType EventType
-}
-
 type controller struct {
 	informer  cache.SharedIndexInformer
 	lister    cache.GenericLister
-	queue     workqueue.TypedRateLimitingInterface[QueueItem]
+	queue     workqueue.TypedRateLimitingInterface[string]
 	client    dynamic.Interface
 	gvr       schema.GroupVersionResource
 	rorclient *rorclient.RorClient
@@ -51,7 +37,7 @@ func NewController(ctx context.Context, client dynamic.Interface, gvr schema.Gro
 		client:    client,
 		informer:  informer.Informer(),
 		lister:    informer.Lister(),
-		queue:     workqueue.NewTypedRateLimitingQueue[QueueItem](workqueue.DefaultTypedControllerRateLimiter[QueueItem]()),
+		queue:     workqueue.NewTypedRateLimitingQueue[string](workqueue.DefaultTypedControllerRateLimiter[string]()),
 		gvr:       gvr,
 		rorclient: rorclient,
 		ctx:       ctx,
@@ -71,16 +57,10 @@ func (c *controller) handleAdd(obj any) {
 	if err != nil {
 		slog.Error("could not create key for object: %w", err)
 	}
-	id := ""
-	qItem := QueueItem{
-		Key:       key,
-		Id:        id,
-		EventType: EVENTADD,
-	}
 
-	c.queue.Add(qItem)
+	c.queue.Add(key)
 
-	slog.Info("add event: adding item to queue", "item", qItem)
+	slog.Info("add event: adding key to queue", "key", key)
 }
 
 func (c *controller) handleUpdate(oldObj, newObj any) {
@@ -88,15 +68,9 @@ func (c *controller) handleUpdate(oldObj, newObj any) {
 	if err != nil {
 		slog.Error("could not create key for object: %w", err)
 	}
-	id := ""
-	qItem := QueueItem{
-		Key:       key,
-		Id:        id,
-		EventType: EVENTADD,
-	}
 
-	c.queue.Add(qItem)
-	slog.Info("update event: adding item to queue", "item", qItem)
+	c.queue.Add(key)
+	slog.Info("update event: adding key to queue", "key", key)
 }
 
 func (c *controller) handleDelete(obj any) {
@@ -111,14 +85,8 @@ func (c *controller) handleDelete(obj any) {
 		slog.Info("delete event: adding key to queue", "key", key)
 	}
 
-	qItem := QueueItem{
-		Key:       key,
-		Id:        "",
-		EventType: EVENTDELETE,
-	}
-
 	if err == nil {
-		c.queue.Add(qItem)
+		c.queue.Add(key)
 	}
 }
 
@@ -160,29 +128,29 @@ func (c *controller) processNextWorkItem() bool {
 	return true
 }
 
-func (c *controller) reconcile(item QueueItem) error {
+func (c *controller) reconcile(key string) error {
 
-	cachedObj, err := c.lister.Get(item.Key)
+	cachedObj, err := c.lister.Get(key)
 	if k8serrors.IsNotFound(err) {
 		// c.rorclient.DeleteRorResources(c.ctx)
-		slog.ErrorContext(c.ctx, "did not find key in cache", "key", item.Key, "error", err)
+		slog.ErrorContext(c.ctx, "did not find key in cache", "key", key, "error", err)
 		return nil
 	}
 	if err != nil {
-		slog.ErrorContext(c.ctx, "unknown error", "key", item.Key, "error", err)
+		slog.ErrorContext(c.ctx, "unknown error", "key", key, "error", err)
 		return err
 	}
 
 	var machine v1alpha1.Machine
 	err = MarshalAnyMachineObject(cachedObj, &machine)
 	if err != nil {
-		slog.ErrorContext(c.ctx, "unable to marshal object to machine", "key", item.Key, "error", err)
+		slog.ErrorContext(c.ctx, "unable to marshal object to machine", "key", key, "error", err)
 		return err
 	}
 
 	resource, err := converter.ConvertToRorMachine(&machine)
 	if err != nil {
-		slog.ErrorContext(c.ctx, "unable to convert object to ror resource", "key", item.Key, "error", err)
+		slog.ErrorContext(c.ctx, "unable to convert object to ror resource", "key", key, "error", err)
 		return err
 	}
 
