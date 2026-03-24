@@ -36,21 +36,6 @@ func (c *MachineClient) UpdateProviderStatus(ctx context.Context, machine v1alph
 	return nil
 }
 
-func vitiMachineToResourceSet(machines []v1alpha1.Machine) (*rorresources.ResourceSet, error) {
-
-	set := rorresources.NewResourceSet()
-	for _, machine := range machines {
-		resource, err := vitiMachineToResource(machine)
-		if err != nil {
-			return nil, err
-		}
-
-		set.Add(resource)
-	}
-
-	return nil, nil
-}
-
 func vitiMachineToResource(machine v1alpha1.Machine) (*rorresources.Resource, error) {
 	resource, err := converter.ConvertToRorMachine(&machine)
 	if err != nil {
