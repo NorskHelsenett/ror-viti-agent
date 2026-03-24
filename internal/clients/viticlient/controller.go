@@ -152,7 +152,7 @@ func (c *controller) reconcile(key string) error {
 		slog.ErrorContext(c.ctx, "unable to marshal object to machine", "key", key, "error", err)
 		return err
 	}
-	//
+
 	// if the deletetion time stamp is not set we need to add our finalizer, if
 	// it is set we need to remove the object from ror and remove our finalizer
 	if machine.DeletionTimestamp.IsZero() {
