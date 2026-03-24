@@ -14,6 +14,12 @@ type MachineClient struct {
 
 // deletes the machine in ROR
 func (c *MachineClient) Delete(ctx context.Context, machine v1alpha1.Machine) error {
+	uuid := converter.GenerateUuidForMachine(machine)
+
+	err := c.client.DeleteRorResource(ctx, uuid.String())
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
