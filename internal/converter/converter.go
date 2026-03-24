@@ -2,11 +2,14 @@ package converter
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/NorskHelsenett/ror-viti-agent/internal/config"
 	"github.com/NorskHelsenett/ror/pkg/models/aclmodels"
 	"github.com/NorskHelsenett/ror/pkg/models/aclmodels/rorresourceowner"
 	"github.com/NorskHelsenett/ror/pkg/rorresources"
 	"github.com/NorskHelsenett/ror/pkg/rorresources/rortypes"
+	"github.com/google/uuid"
 	"github.com/vitistack/common/pkg/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -54,7 +57,7 @@ func ConvertToRorMachine(vitimachine *v1alpha1.Machine) (*rorresources.Resource,
 		Subject: aclmodels.Acl2Subject(machine.Status.ProviderStatus.ProviderID),
 	}
 
-	rorresource.Metadata.UID = types.UID(vitimachine.Status.MachineID)
+	rorresource.Metadata.UID = types.UID(GenerateUuidForMachine(*vitimachine).String())
 	rorresource.Metadata.Name = vitimachine.Name
 	rorresource.RorMeta.Action = rortypes.K8sActionAdd
 	rorresource.SetMachine(&machine)
@@ -81,4 +84,16 @@ func convertRorMachineStatus(vitimachine *v1alpha1.Machine) *rortypes.ResourceMa
 	}
 
 	return &status
+}
+
+// Generates a unique id for the name given. Uses uuidv5 and uses a combination
+// of availabilityzone and provider as the namespace.
+// The uuid will be unique within an availabilityzone and provider
+func GenerateUuidForMachine(machine v1alpha1.Machine) uuid.UUID {
+	ns := strings.Join([]string{machine.Spec.ProviderConfig.Zone, machine.Spec.ProviderConfig.Name}, "_")
+	namespace := uuid.NewSHA1(config.GetNamespaceId(), []byte(ns))
+
+	uuid := uuid.NewSHA1(namespace, []byte(machine.Status.ProviderID))
+
+	return uuid
 }
